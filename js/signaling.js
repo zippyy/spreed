@@ -671,6 +671,23 @@
 		});
 	};
 
+	StandaloneSignaling.prototype.sendRoomMessage = function(data) {
+		if (!this.currentCallToken) {
+			console.warn("Not in a room, not sending room message", data);
+			return;
+		}
+
+		this.doSend({
+			"type": "message",
+			"message": {
+				"recipient": {
+					"type": "room"
+				},
+				"data": data
+			}
+		});
+	};
+
 	StandaloneSignaling.prototype.doSend = function(msg, callback) {
 		if (!this.connected && msg.type !== "hello") {
 			// Defer sending any messages until the hello rsponse has been
@@ -938,6 +955,61 @@
 				console.log("Unknown room participant event", data);
 				break;
 		}
+	};
+
+	StandaloneSignaling.prototype.requestOffer = function(sessionid, roomType) {
+		if (!this.hasFeature("mcu")) {
+			console.warn("Can't request an offer without a MCU.");
+			return;
+		}
+
+		if (typeof(sessionid) !== "string") {
+			// Got a user object.
+			sessionid = sessionid.sessionid;
+		}
+		console.log("Request offer from", sessionid);
+		this.doSend({
+			"type": "message",
+			"message": {
+				"recipient": {
+					"type": "session",
+					"sessionid": sessionid
+				},
+				"data": {
+					"type": "requestoffer",
+					"roomType": roomType
+				}
+			}
+		});
+	};
+
+	StandaloneSignaling.prototype.sendOffer = function(sessionid, roomType) {
+		// TODO(jojo): This should go away and "requestOffer" should be used
+		// instead by peers that want an offer by the MCU. See the calling
+		// location for further details.
+		if (!this.hasFeature("mcu")) {
+			console.warn("Can't send an offer without a MCU.");
+			return;
+		}
+
+		if (typeof(sessionid) !== "string") {
+			// Got a user object.
+			sessionid = sessionid.sessionid;
+		}
+		console.log("Send offer to", sessionid);
+		this.doSend({
+			"type": "message",
+			"message": {
+				"recipient": {
+					"type": "session",
+					"sessionid": sessionid
+				},
+				"data": {
+					"type": "sendoffer",
+					"roomType": roomType
+				}
+			}
+		});
 	};
 
 	OCA.SpreedMe.createSignalingConnection = function() {
