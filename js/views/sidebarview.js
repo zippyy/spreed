@@ -32,7 +32,7 @@
 		'	<div class="large-outer-left-triangle"/>' +
 		'	<div class="large-inner-left-triangle"/>' +
 		'</div>' +
-		'<div id="app-sidebar" class="detailsView scroll-container">' +
+		'<div id="app-sidebar" class="detailsView">' +
 		'	<div class="detailCallInfoContainer">' +
 		'	</div>' +
 		'	<div class="tabs">' +
