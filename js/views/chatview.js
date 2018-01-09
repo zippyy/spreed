@@ -59,11 +59,17 @@
 
 	var ChatView = Marionette.View.extend({
 
+		className: function() {
+			return 'chat' + (!this._newestOnTopLayout? ' oldestOnTopLayout': '');
+		},
+
 		events: {
 			'submit .newCommentForm': '_onSubmitComment',
 		},
 
-		initialize: function() {
+		initialize: function(options) {
+			this._newestOnTopLayout = ('newestOnTopLayout' in options)? options.newestOnTopLayout: true;
+
 			this.listenTo(this.collection, 'reset', this.render);
 			this.listenTo(this.collection, 'add', this._onAddModel);
 		},
@@ -97,7 +103,11 @@
 		onRender: function() {
 			delete this._lastAddedMessageModel;
 
-			this.$el.find('.comments').before(this.addCommentTemplate({}));
+			if (this._newestOnTopLayout) {
+				this.$el.find('.comments').before(this.addCommentTemplate({}));
+			} else {
+				this.$el.find('.emptycontent').after(this.addCommentTemplate({}));
+			}
 			this.$el.find('.has-tooltip').tooltip({container: this._tooltipContainer});
 			this.$container = this.$el.find('ul.comments');
 			// FIXME handle guest users
@@ -159,13 +169,19 @@
 			var $el = $(this.commentTemplate(this._formatItem(model)));
 			if (!_.isUndefined(options.at) && collection.length > 1) {
 				this.$container.find('li').eq(options.at).before($el);
-			} else {
+			} else if (this._newestOnTopLayout) {
 				this.$container.prepend($el);
+			} else {
+				this.$container.append($el);
 			}
 
 			if (this._modelsHaveSameActor(this._lastAddedMessageModel, model) &&
 					this._modelsAreTemporaryNear(this._lastAddedMessageModel, model)) {
-				$el.next().addClass('grouped');
+				if (this._newestOnTopLayout) {
+					$el.next().addClass('grouped');
+				} else {
+					$el.addClass('grouped');
+				}
 			}
 
 			// PHP timestamp is second-based; JavaScript timestamp is
@@ -175,8 +191,13 @@
 			if (this._lastAddedMessageModel && !this._modelsHaveSameDate(this._lastAddedMessageModel, model)) {
 				// 'LL' formats a localized date including day of month, month
 				// name and year
-				$el.next().attr('data-date', OC.Util.formatDate(this._lastAddedMessageModel.get('date'), 'LL'));
-				$el.next().addClass('showDate');
+				if (this._newestOnTopLayout) {
+					$el.next().attr('data-date', OC.Util.formatDate(this._lastAddedMessageModel.get('date'), 'LL'));
+					$el.next().addClass('showDate');
+				} else {
+					$el.attr('data-date', OC.Util.formatDate(model.get('date'), 'LL'));
+					$el.addClass('showDate');
+				}
 			}
 
 			// Keeping the model for the last added message is not only
