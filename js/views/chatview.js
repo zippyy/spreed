@@ -164,7 +164,26 @@
 		},
 
 		_onAddModel: function(model, collection, options) {
+			var self = this;
+
 			this.$el.find('.emptycontent').toggleClass('hidden', true);
+
+			if (this._newestOnTopLayout) {
+				var $newestComment = this.$container.children('.comment').first();
+				var scrollToNew = $newestComment.length > 0 && ($newestComment.position().top + $newestComment.outerHeight(true)) < 0;
+			} else {
+				var $newestComment = this.$container.children('.comment').last();
+				var scrollToNew = $newestComment.length > 0 && $newestComment.position().top < this.$container.outerHeight(true);
+			}
+
+			if (scrollToNew) {
+				if (this._newestOnTopLayout) {
+					var $newestVisibleComment = this.$container.children('.comment').filter(function() {
+						return $(this).position().top > 0;
+					}).first();
+					var newestVisibleCommentTop = Math.round($newestVisibleComment.position().top);
+				}
+			}
 
 			var $el = $(this.commentTemplate(this._formatItem(model)));
 			if (!_.isUndefined(options.at) && collection.length > 1) {
@@ -207,6 +226,24 @@
 			this._lastAddedMessageModel = model;
 
 			this._postRenderItem($el);
+
+			if (scrollToNew) {
+				if (this._newestOnTopLayout) {
+					var newNewestVisibleCommentTop = Math.round($newestVisibleComment.position().top);
+
+					var $scrollContainer = this.$container.parents().filter(function() {
+						return $(this).scrollTop() > 0;
+					}).first();
+					// It is not enough to just add the outer height of the added
+					// element, as the height of other elements could change too
+					// (for example, if the previous last message was grouped with
+					// the new one).
+					$scrollContainer.scrollTop($scrollContainer.scrollTop() + (newNewestVisibleCommentTop - newestVisibleCommentTop));
+				} else {
+					var newestCommentHiddenHeight = ($newestComment.position().top + $newestComment.outerHeight(true)) - this.$container.outerHeight(true);
+					this.$container.scrollTop(this.$container.scrollTop() + newestCommentHiddenHeight + $el.outerHeight(true));
+				}
+			}
 		},
 
 		_modelsHaveSameActor: function(model1, model2) {
