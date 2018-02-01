@@ -150,6 +150,12 @@
 			success: function (result) {
 				console.log("Joined", result);
 				this.currentRoomToken = token;
+				if (this.currentCallToken === token) {
+					// We were in this call before, join again.
+					this.joinCall(token);
+				} else {
+					this.currentCallToken = null;
+				}
 				this._joinRoomSuccess(token, result.ocs.data.sessionId);
 			}.bind(this),
 			error: function (result) {
@@ -221,11 +227,13 @@
 			success: function () {
 				this.currentCallToken = token;
 				this._joinCallSuccess(token);
-				// We send an empty call description to simplewebrtc since
-				// usersChanged (webrtc.js) will create/remove peer connections
-				// with call participants
-				var callDescription = {'clients': {}};
-				callback('', callDescription);
+				if (callback) {
+					// We send an empty call description to simplewebrtc since
+					// usersChanged (webrtc.js) will create/remove peer connections
+					// with call participants
+					var callDescription = {'clients': {}};
+					callback('', callDescription);
+				}
 			}.bind(this),
 			error: function () {
 				// Room not found or maintenance mode
@@ -238,7 +246,7 @@
 		// Override in subclasses if necessary.
 	};
 
-	SignalingBase.prototype.leaveCall = function(token) {
+	SignalingBase.prototype.leaveCall = function(token, keepToken) {
 		$.ajax({
 			url: OC.linkToOCS('apps/spreed/api/v1/call', 2) + token,
 			method: 'DELETE',
@@ -246,7 +254,7 @@
 			success: function () {
 				this._leaveCallSuccess(token);
 				// We left the current call.
-				if (token === this.currentCallToken) {
+				if (!keepToken && token === this.currentCallToken) {
 					this.currentCallToken = null;
 				}
 			}.bind(this)
@@ -683,6 +691,10 @@
 
 		this._forceReconnect = false;
 		if (newSession) {
+			if (this.currentCallToken) {
+				// Mark this session as "no longer in the call".
+				this.leaveCall(this.currentCallToken, true);
+			}
 			this.sendBye();
 		}
 		if (this.socket) {
