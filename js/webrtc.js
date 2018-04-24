@@ -646,7 +646,7 @@ var spreedPeerConnectionTable = [];
 			if (error.name === "NotAllowedError") {
 				if (error.message && error.message.indexOf("Only secure origins") !== -1) {
 					message = t('spreed', 'Access to microphone & camera is only possible with HTTPS');
-					message += ': ' + t('spreed', 'Please move your setup to HTTPS');
+					message += ': ' + t('spreed', 'Enable HTTPS for your setup');
 				} else {
 					message = t('spreed', 'Access to microphone & camera was denied');
 				}
